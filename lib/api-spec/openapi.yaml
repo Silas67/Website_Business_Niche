@@ -124,6 +124,10 @@ components:
           type: string
           minLength: 2
           maxLength: 120
+        businessName:
+          type: string
+          minLength: 2
+          maxLength: 120
         email:
           type: ["string", "null"]
           format: email
@@ -143,7 +147,7 @@ components:
             - Real Estate
             - Education
             - Other
-      required: [name, email, phone, niche]
+      required: [name, businessName, email, phone, niche]
     WebsiteLead:
       type: object
       properties:
@@ -151,6 +155,8 @@ components:
           type: integer
         name:
           type: string
+        businessName:
+          type: ["string", "null"]
         email:
           type: ["string", "null"]
         phone:
@@ -169,7 +175,7 @@ components:
         createdAt:
           type: string
           format: date-time
-      required: [id, name, email, phone, niche, createdAt]
+      required: [id, name, businessName, email, phone, niche, createdAt]
     WebsiteLeadSummary:
       type: object
       properties:

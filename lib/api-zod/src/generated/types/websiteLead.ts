@@ -11,6 +11,8 @@ export interface WebsiteLead {
   id: number;
   name: string;
   /** @nullable */
+  businessName: string | null;
+  /** @nullable */
   email: string | null;
   /** @nullable */
   phone: string | null;

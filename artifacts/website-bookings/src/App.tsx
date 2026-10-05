@@ -105,6 +105,7 @@ function Header() {
 function BookingForm() {
   const cache = useQueryClient();
   const [name, setName] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [niche, setNiche] = useState<WebsiteLeadInputNiche | ''>('');
@@ -119,13 +120,21 @@ function BookingForm() {
       setLocalError('Choose the kind of business you run to continue.');
       return;
     }
+    if (name.trim().length < 2) {
+      setLocalError('Enter your name to continue.');
+      return;
+    }
+    if (businessName.trim().length < 2) {
+      setLocalError('Enter your business name to continue.');
+      return;
+    }
     if (!email.trim() && !phone.trim()) {
       setLocalError('Add an email address or phone number so we can reach you.');
       return;
     }
     try {
       await createLead.mutateAsync({
-        data: { name: name.trim(), email: email.trim() || null, phone: phone.trim() || null, niche },
+        data: { name: name.trim(), businessName: businessName.trim(), email: email.trim() || null, phone: phone.trim() || null, niche },
       });
       await Promise.all([
         cache.invalidateQueries({ queryKey: getListWebsiteLeadsQueryKey() }),
@@ -133,6 +142,7 @@ function BookingForm() {
       ]);
       setSubmitted(true);
       setName('');
+      setBusinessName('');
       setEmail('');
       setPhone('');
       setNiche('');
@@ -164,22 +174,27 @@ function BookingForm() {
       </div>
       <label htmlFor="lead-name" className="mb-1.5 block text-[13px] font-bold text-[#334a41]">Your name <span className="text-[#d96b4c]">*</span></label>
       <input id="lead-name" data-testid="input-name" required minLength={2} maxLength={120} autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Ada Okafor" className="mb-4 h-12 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] px-4 text-[14px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
-      <div className="grid gap-4 sm:grid-cols-2">
+      <label htmlFor="lead-business-name" className="mb-1.5 block text-[13px] font-bold text-[#334a41]">Business name <span className="text-[#d96b4c]">*</span></label>
+      <input id="lead-business-name" data-testid="input-business-name" required minLength={2} maxLength={120} autoComplete="organization" value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="e.g. Morrow & Moss" className="mb-4 h-12 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] px-4 text-[14px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
+      <fieldset>
+        <legend className="mb-1.5 text-[13px] font-bold text-[#334a41]">Email or phone <span className="text-[#d96b4c]">*</span><span className="ml-2 font-normal text-[#78847d]">At least one is required</span></legend>
+        <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="lead-email" className="mb-1.5 block text-[13px] font-bold text-[#334a41]">Email <span className="font-normal text-[#8a928d]">optional</span></label>
+          <label htmlFor="lead-email" className="mb-1.5 block text-[13px] font-semibold text-[#53645d]">Email</label>
           <div className="relative">
             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86928a]" size={16} />
-            <input id="lead-email" data-testid="input-email" type="email" maxLength={254} autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@business.com" className="h-12 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] pl-10 pr-3 text-[13px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
+            <input id="lead-email" data-testid="input-email" type="email" required={!phone.trim()} maxLength={254} autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@business.com" className="h-12 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] pl-10 pr-3 text-[13px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
           </div>
         </div>
         <div>
-          <label htmlFor="lead-phone" className="mb-1.5 block text-[13px] font-bold text-[#334a41]">Phone <span className="font-normal text-[#8a928d]">optional</span></label>
+          <label htmlFor="lead-phone" className="mb-1.5 block text-[13px] font-semibold text-[#53645d]">Phone</label>
           <div className="relative">
             <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86928a]" size={16} />
-            <input id="lead-phone" data-testid="input-phone" type="tel" minLength={7} maxLength={32} autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+234 800 000 0000" className="h-12 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] pl-10 pr-3 text-[13px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
+            <input id="lead-phone" data-testid="input-phone" type="tel" required={!email.trim()} minLength={7} maxLength={32} autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+234 800 000 0000" className="h-12 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] pl-10 pr-3 text-[13px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
           </div>
         </div>
-      </div>
+        </div>
+      </fieldset>
       <label htmlFor="lead-niche" className="mb-1.5 mt-4 block text-[13px] font-bold text-[#334a41]">What kind of business? <span className="text-[#d96b4c]">*</span></label>
       <div className="relative">
         <select id="lead-niche" data-testid="select-niche" required value={niche} onChange={e => setNiche(e.target.value as WebsiteLeadInputNiche)} className="h-12 w-full appearance-none rounded-xl border border-[#ddd8cc] bg-[#fffefa] px-4 pr-10 text-[14px] text-[#263b35] outline-none transition focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10">
@@ -402,11 +417,12 @@ function Admin() {
                 <div className="px-6 py-16 text-center"><span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[#eaf0e8] text-[#47735f]"><Clock3 size={21} /></span><h3 className="mt-4 font-serif text-2xl text-[#344b41]">The inbox is clear.</h3><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#78847d]">New website requests will appear here as soon as someone submits the form.</p></div>
               ) : (
                 <>
-                  <div className="hidden grid-cols-[1.2fr_1.4fr_1fr_1.3fr] gap-4 bg-[#f7f5ee] px-7 py-3 text-[10px] font-bold uppercase tracking-[.12em] text-[#8b958d] md:grid"><span>Name</span><span>Contact</span><span>Business type</span><span>Received</span></div>
+                  <div className="hidden grid-cols-[1fr_1.15fr_1.4fr_1fr_1.2fr] gap-4 bg-[#f7f5ee] px-7 py-3 text-[10px] font-bold uppercase tracking-[.12em] text-[#8b958d] md:grid"><span>Name</span><span>Business</span><span>Contact</span><span>Business type</span><span>Received</span></div>
                   <div className="divide-y divide-[#eeeae1]">
                     {[...leads.data].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(lead => (
-                      <article key={lead.id} data-testid={`row-lead-${lead.id}`} className="grid gap-3 px-5 py-5 transition hover:bg-[#fcfaf5] md:grid-cols-[1.2fr_1.4fr_1fr_1.3fr] md:items-center md:gap-4 md:px-7">
+                      <article key={lead.id} data-testid={`row-lead-${lead.id}`} className="grid gap-3 px-5 py-5 transition hover:bg-[#fcfaf5] md:grid-cols-[1fr_1.15fr_1.4fr_1fr_1.2fr] md:items-center md:gap-4 md:px-7">
                         <div><p className="font-semibold text-[#31483e]">{lead.name}</p><p className="mt-1 text-[11px] text-[#89938c] md:hidden">{niceDate(lead.createdAt)}</p></div>
+                        <div className="text-sm font-medium text-[#53645c]">{lead.businessName || 'Business name not provided'}</div>
                         <div className="space-y-1 text-xs text-[#68776f]">
                           {lead.email ? <a href={`mailto:${lead.email}`} className="block w-fit hover:text-[#27594c]">{lead.email}</a> : <span className="block text-[#a4aaa4]">No email</span>}
                           {lead.phone ? <a href={`tel:${lead.phone}`} className="block w-fit hover:text-[#27594c]">{lead.phone}</a> : <span className="block text-[#a4aaa4]">No phone</span>}

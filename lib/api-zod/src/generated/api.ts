@@ -23,6 +23,9 @@ export const HealthCheckResponse = zod.object({
 export const createWebsiteLeadBodyNameMin = 2;
 export const createWebsiteLeadBodyNameMax = 120;
 
+export const createWebsiteLeadBodyBusinessNameMin = 2;
+export const createWebsiteLeadBodyBusinessNameMax = 120;
+
 export const createWebsiteLeadBodyEmailMax = 254;
 
 export const createWebsiteLeadBodyPhoneMin = 7;
@@ -32,6 +35,7 @@ export const createWebsiteLeadBodyPhoneMax = 32;
 
 export const CreateWebsiteLeadBody = zod.object({
   "name": zod.string().min(createWebsiteLeadBodyNameMin).max(createWebsiteLeadBodyNameMax),
+  "businessName": zod.string().min(createWebsiteLeadBodyBusinessNameMin).max(createWebsiteLeadBodyBusinessNameMax),
   "email": zod.string().email().max(createWebsiteLeadBodyEmailMax).nullable(),
   "phone": zod.string().min(createWebsiteLeadBodyPhoneMin).max(createWebsiteLeadBodyPhoneMax).nullable(),
   "niche": zod.enum(['Portfolio', 'Restaurant', 'Clinic', 'Salon & Beauty', 'Fashion', 'Real Estate', 'Education', 'Other'])
@@ -40,6 +44,7 @@ export const CreateWebsiteLeadBody = zod.object({
 export const CreateWebsiteLeadResponse = zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
+  "businessName": zod.string().nullable(),
   "email": zod.string().nullable(),
   "phone": zod.string().nullable(),
   "niche": zod.enum(['Portfolio', 'Restaurant', 'Clinic', 'Salon & Beauty', 'Fashion', 'Real Estate', 'Education', 'Other']),
@@ -53,6 +58,7 @@ export const CreateWebsiteLeadResponse = zod.object({
 export const ListWebsiteLeadsResponseItem = zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
+  "businessName": zod.string().nullable(),
   "email": zod.string().nullable(),
   "phone": zod.string().nullable(),
   "niche": zod.enum(['Portfolio', 'Restaurant', 'Clinic', 'Salon & Beauty', 'Fashion', 'Real Estate', 'Education', 'Other']),

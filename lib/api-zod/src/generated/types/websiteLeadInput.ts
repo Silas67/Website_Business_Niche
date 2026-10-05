@@ -14,6 +14,11 @@ export interface WebsiteLeadInput {
      */
   name: string;
   /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  businessName: string;
+  /**
      * @maxLength 254
      * @nullable
      */

@@ -33,13 +33,13 @@ Smallsite collects booking requests for compact, template-based websites priced 
 
 ## Architecture decisions
 
-- The public form accepts either email or phone; at least one contact method is required.
+- The public form requires a person name, business name, business type, and at least one contact method (email or phone).
 - Admin API access requires a Clerk session and a server-side email allowlist; do not replace this with a client-only route check.
 - The Replit development database and the database used by Vercel are separate.
 
 ## Product
 
-- Prospects can request a small website by entering their name, contact details, and business niche.
+- Prospects can request a small website by entering their name, business name, contact details, and business niche.
 - The owner can review requests in a private inbox.
 
 ## User preferences

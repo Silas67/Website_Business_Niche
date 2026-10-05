@@ -18,6 +18,18 @@ router.post("/leads", async (req, res): Promise<void> => {
     return;
   }
 
+  const name = parsed.data.name.trim();
+  const businessName = parsed.data.businessName.trim();
+  if (name.length < 2) {
+    res.status(400).json({ error: "Enter your name." });
+    return;
+  }
+
+  if (businessName.length < 2) {
+    res.status(400).json({ error: "Enter your business name." });
+    return;
+  }
+
   const email = parsed.data.email?.trim() || null;
   const phone = parsed.data.phone?.trim() || null;
 
@@ -29,7 +41,8 @@ router.post("/leads", async (req, res): Promise<void> => {
   const [lead] = await db
     .insert(websiteLeadsTable)
     .values({
-      name: parsed.data.name.trim(),
+      name,
+      businessName,
       email,
       phone,
       niche: parsed.data.niche,

@@ -30,6 +30,11 @@ export interface WebsiteLeadInput {
      */
   name: string;
   /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  businessName: string;
+  /**
      * @maxLength 254
      * @nullable
      */
@@ -60,6 +65,8 @@ export const WebsiteLeadNiche = {
 export interface WebsiteLead {
   id: number;
   name: string;
+  /** @nullable */
+  businessName: string | null;
   /** @nullable */
   email: string | null;
   /** @nullable */
