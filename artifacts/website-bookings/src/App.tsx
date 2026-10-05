@@ -105,9 +105,8 @@ function Header() {
 function BookingForm() {
   const cache = useQueryClient();
   const [name, setName] = useState('');
+  const [contact, setContact] = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [niche, setNiche] = useState<WebsiteLeadInputNiche | ''>('');
   const [submitted, setSubmitted] = useState(false);
   const [localError, setLocalError] = useState('');
@@ -128,13 +127,30 @@ function BookingForm() {
       setLocalError('Enter your business name to continue.');
       return;
     }
-    if (!email.trim() && !phone.trim()) {
-      setLocalError('Add an email address or phone number so we can reach you.');
+    const normalizedContact = contact.trim();
+    const contactIsEmail = normalizedContact.includes('@');
+    if (!normalizedContact) {
+      setLocalError('Enter your email or phone number to continue.');
+      return;
+    }
+    if (
+      (contactIsEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedContact)) ||
+      (!contactIsEmail && normalizedContact.replace(/\D/g, '').length < 7) ||
+      (!contactIsEmail && normalizedContact.length > 32) ||
+      (contactIsEmail && normalizedContact.length > 254)
+    ) {
+      setLocalError('Enter a valid email address or phone number.');
       return;
     }
     try {
       await createLead.mutateAsync({
-        data: { name: name.trim(), businessName: businessName.trim(), email: email.trim() || null, phone: phone.trim() || null, niche },
+        data: {
+          name: name.trim(),
+          businessName: businessName.trim(),
+          email: contactIsEmail ? normalizedContact : null,
+          phone: contactIsEmail ? null : normalizedContact,
+          niche,
+        },
       });
       await Promise.all([
         cache.invalidateQueries({ queryKey: getListWebsiteLeadsQueryKey() }),
@@ -142,9 +158,8 @@ function BookingForm() {
       ]);
       setSubmitted(true);
       setName('');
+      setContact('');
       setBusinessName('');
-      setEmail('');
-      setPhone('');
       setNiche('');
     } catch {
       setLocalError('We couldn’t send your request just now. Please check your connection and try again.');
@@ -172,36 +187,29 @@ function BookingForm() {
         </div>
         <span className="rounded-full bg-[#f1eee5] px-3 py-1.5 text-[11px] font-bold text-[#53645d]">01 / 01</span>
       </div>
-      <label htmlFor="lead-name" className="mb-1.5 block text-[13px] font-bold text-[#334a41]">Your name <span className="text-[#d96b4c]">*</span></label>
-      <input id="lead-name" data-testid="input-name" required minLength={2} maxLength={120} autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Ada Okafor" className="mb-4 h-12 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] px-4 text-[14px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
-      <label htmlFor="lead-business-name" className="mb-1.5 block text-[13px] font-bold text-[#334a41]">Business name <span className="text-[#d96b4c]">*</span></label>
-      <input id="lead-business-name" data-testid="input-business-name" required minLength={2} maxLength={120} autoComplete="organization" value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="e.g. Morrow & Moss" className="mb-4 h-12 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] px-4 text-[14px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
-      <fieldset>
-        <legend className="mb-1.5 text-[13px] font-bold text-[#334a41]">Email or phone <span className="text-[#d96b4c]">*</span><span className="ml-2 font-normal text-[#78847d]">At least one is required</span></legend>
-        <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="lead-email" className="mb-1.5 block text-[13px] font-semibold text-[#53645d]">Email</label>
+      <div className="space-y-3">
+        <div className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3">
+          <label htmlFor="lead-name" className="whitespace-nowrap text-[12px] font-bold text-[#334a41]">Your name <span className="text-[#d96b4c]">*</span></label>
+          <input id="lead-name" data-testid="input-name" required minLength={2} maxLength={120} autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Ada Okafor" className="h-12 min-w-0 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] px-3 text-[13px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
+        </div>
+        <div className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3">
+          <label htmlFor="lead-contact" className="whitespace-nowrap text-[12px] font-bold text-[#334a41]">Email/Phone <span className="text-[10px] font-semibold text-[#87918a]">Required</span></label>
+          <input id="lead-contact" data-testid="input-contact" type="text" required maxLength={254} value={contact} onChange={e => setContact(e.target.value)} placeholder="Email or phone number" className="h-12 min-w-0 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] px-3 text-[13px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
+        </div>
+        <div className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3">
+          <label htmlFor="lead-business-name" className="whitespace-nowrap text-[12px] font-bold text-[#334a41]">Business name <span className="text-[#d96b4c]">*</span></label>
+          <input id="lead-business-name" data-testid="input-business-name" required minLength={2} maxLength={120} autoComplete="organization" value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="e.g. Morrow & Moss" className="h-12 min-w-0 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] px-3 text-[13px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
+        </div>
+        <div className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3">
+          <label htmlFor="lead-niche" className="whitespace-nowrap text-[12px] font-bold text-[#334a41]">Business type <span className="text-[#d96b4c]">*</span></label>
           <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86928a]" size={16} />
-            <input id="lead-email" data-testid="input-email" type="email" required={!phone.trim()} maxLength={254} autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@business.com" className="h-12 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] pl-10 pr-3 text-[13px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
+            <select id="lead-niche" data-testid="select-niche" required value={niche} onChange={e => setNiche(e.target.value as WebsiteLeadInputNiche)} className="h-12 w-full appearance-none rounded-xl border border-[#ddd8cc] bg-[#fffefa] px-3 pr-10 text-[13px] text-[#263b35] outline-none transition focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10">
+              <option value="" disabled>Select your business type</option>
+              {niches.map(item => <option key={item} value={item}>{item}</option>)}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#74837b]" size={17} />
           </div>
         </div>
-        <div>
-          <label htmlFor="lead-phone" className="mb-1.5 block text-[13px] font-semibold text-[#53645d]">Phone</label>
-          <div className="relative">
-            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86928a]" size={16} />
-            <input id="lead-phone" data-testid="input-phone" type="tel" required={!email.trim()} minLength={7} maxLength={32} autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+234 800 000 0000" className="h-12 w-full rounded-xl border border-[#ddd8cc] bg-[#fffefa] pl-10 pr-3 text-[13px] text-[#263b35] outline-none transition placeholder:text-[#a5aaa2] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10" />
-          </div>
-        </div>
-        </div>
-      </fieldset>
-      <label htmlFor="lead-niche" className="mb-1.5 mt-4 block text-[13px] font-bold text-[#334a41]">What kind of business? <span className="text-[#d96b4c]">*</span></label>
-      <div className="relative">
-        <select id="lead-niche" data-testid="select-niche" required value={niche} onChange={e => setNiche(e.target.value as WebsiteLeadInputNiche)} className="h-12 w-full appearance-none rounded-xl border border-[#ddd8cc] bg-[#fffefa] px-4 pr-10 text-[14px] text-[#263b35] outline-none transition focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10">
-          <option value="" disabled>Select your business type</option>
-          {niches.map(item => <option key={item} value={item}>{item}</option>)}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#74837b]" size={17} />
       </div>
       {localError && <p role="alert" data-testid="status-form-error" className="mt-3 rounded-lg bg-[#fbefeb] px-3 py-2 text-sm text-[#9e433b]">{localError}</p>}
       <button type="submit" disabled={createLead.isPending} data-testid="button-submit-request" className="mt-5 flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#27594c] px-5 text-[15px] font-bold text-[#fffdf8] transition hover:bg-[#1f493e] focus:outline-none focus:ring-4 focus:ring-[#27594c]/20 disabled:cursor-wait disabled:opacity-70">
