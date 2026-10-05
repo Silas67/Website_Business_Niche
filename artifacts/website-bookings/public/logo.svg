@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184 42" fill="none">
+  <rect width="40" height="40" rx="12" fill="#27594C"/>
+  <path d="M10.7 25.2c0-5.15 3.21-8.6 8.06-8.6 4.5 0 7.28 3.03 7.28 7.8v1.2h-10.6c.22 2.14 1.48 3.27 3.57 3.27 1.52 0 2.57-.57 3.13-1.68l3.57 1.42c-1.1 2.8-3.52 4.36-6.86 4.36-4.96 0-8.15-3.06-8.15-7.77Zm10.93-2.25c-.23-1.74-1.15-2.58-2.83-2.58-1.7 0-2.78.88-3.18 2.58h6.01Z" fill="#FBF8F1"/>
+  <circle cx="31.2" cy="30.5" r="2.4" fill="#D96B4C"/>
+  <text x="50" y="28" fill="#263B35" font-family="DM Sans, sans-serif" font-size="22" font-weight="700" letter-spacing="-1.1">smallsite</text>
+  <circle cx="143" cy="24.3" r="2.2" fill="#D96B4C"/>
+</svg>

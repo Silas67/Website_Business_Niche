@@ -1,15 +1,17 @@
-# [Project name]
+# Smallsite Booking Form
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Smallsite collects booking requests for compact, template-based websites priced at ₦50,000 and gives the owner a private inbox for follow-up.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/website-bookings run dev` — run the public booking form and admin inbox
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required server env: `DATABASE_URL`, `ADMIN_EMAIL`, and Clerk keys (`CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`)
+- Required frontend env: `VITE_CLERK_PUBLISHABLE_KEY`
 
 ## Stack
 
@@ -22,23 +24,33 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/website-bookings/` — public form, Clerk routes, and admin inbox
+- `artifacts/api-server/src/routes/website-bookings.ts` — booking submission and owner-only inbox endpoints
+- `lib/db/src/schema/websiteLeads.ts` — stored lead fields
+- `lib/api-spec/openapi.yaml` — source of truth for the lead API contract
+- `VERCEL.md` — Vercel environment and database setup notes
+- `docs/website-leads.sql` — SQL for a separately hosted Vercel database
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The public form accepts either email or phone; at least one contact method is required.
+- Admin API access requires a Clerk session and a server-side email allowlist; do not replace this with a client-only route check.
+- The Replit development database and the database used by Vercel are separate.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Prospects can request a small website by entering their name, contact details, and business niche.
+- The owner can review requests in a private inbox.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The user plans to host the booking site on Vercel.
+- The user wants the offer described as a small template-based website, not a bulky custom build.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Configure the same Clerk application keys and an accessible PostgreSQL database in Vercel before deploying there.
+- Vercel's database needs the `website_leads` table; follow `VERCEL.md` and `docs/website-leads.sql`.
 
 ## Pointers
 
