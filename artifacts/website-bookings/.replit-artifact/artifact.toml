@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Website Booking Form"
+description = "A mobile-friendly booking form for affordable ₦50,000 template-based websites, with a private owner inbox for submitted leads."
+version = "1.0.0"
+id = "artifacts/website-bookings"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25660
+
+[services.development]
+run = "pnpm --filter @workspace/website-bookings run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/website-bookings", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/website-bookings/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25660"
+BASE_PATH = "/"

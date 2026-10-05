@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: website-bookings
+    description: Website booking requests
 paths:
   /healthz:
     get:
@@ -24,7 +26,77 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /leads:
+    post:
+      operationId: createWebsiteLead
+      tags: [website-bookings]
+      summary: Submit a website booking request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebsiteLeadInput"
+      responses:
+        "201":
+          description: Booking request received
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebsiteLead"
+        "400":
+          description: Invalid booking request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    get:
+      operationId: listWebsiteLeads
+      tags: [website-bookings]
+      summary: List booking requests for the admin inbox
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Booking requests, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WebsiteLead"
+        "401":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /leads/summary:
+    get:
+      operationId: getWebsiteLeadSummary
+      tags: [website-bookings]
+      summary: Get booking totals for the admin inbox
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Total request count and niche breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebsiteLeadSummary"
+        "401":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 components:
+  securitySchemes:
+    clerkSession:
+      type: apiKey
+      in: cookie
+      name: __session
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +105,81 @@ components:
           type: string
       required:
         - status
+    WebsiteLeadInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        email:
+          type: ["string", "null"]
+          format: email
+          maxLength: 254
+        phone:
+          type: ["string", "null"]
+          minLength: 7
+          maxLength: 32
+        niche:
+          type: string
+          enum:
+            - Portfolio
+            - Restaurant
+            - Clinic
+            - Salon & Beauty
+            - Fashion
+            - Real Estate
+            - Education
+            - Other
+      required: [name, email, phone, niche]
+    WebsiteLead:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        niche:
+          type: string
+          enum:
+            - Portfolio
+            - Restaurant
+            - Clinic
+            - Salon & Beauty
+            - Fashion
+            - Real Estate
+            - Education
+            - Other
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, email, phone, niche, createdAt]
+    WebsiteLeadSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        byNiche:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebsiteLeadNicheCount"
+      required: [total, byNiche]
+    WebsiteLeadNicheCount:
+      type: object
+      properties:
+        niche:
+          type: string
+        count:
+          type: integer
+      required: [niche, count]
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
 
