@@ -42,10 +42,6 @@ Smallsite collects booking requests for compact, template-based websites priced 
 - Prospects can request a small website by entering their name, business name, contact details, and business niche.
 - The owner can review requests in a private inbox.
 
-## User preferences
-
-- The user plans to host the booking site on Vercel.
-- The user wants the offer described as a small template-based website, not a bulky custom build.
 
 ## Gotchas
 
@@ -53,5 +49,4 @@ Smallsite collects booking requests for compact, template-based websites priced 
 - Vercel's database needs the `website_leads` table; follow `VERCEL.md` and `docs/website-leads.sql`.
 
 ## Pointers
-
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
