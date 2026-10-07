@@ -3,7 +3,8 @@
   "services": {
     "api-server": {
       "root": "artifacts/api-server",
-      "framework": "express"
+      "framework": "express",
+      "entrypoint": "src/app.ts"
     },
     "website-bookings": {
       "root": "artifacts/website-bookings",
