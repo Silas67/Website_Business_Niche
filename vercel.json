@@ -9,7 +9,10 @@
     "website-bookings": {
       "root": "artifacts/website-bookings",
       "framework": "vite",
-      "outputDirectory": "dist/public"
+      "outputDirectory": "dist/public",
+      "rewrites": [
+        { "source": "/(.*)", "destination": "/index.html" }
+      ]
     }
   },
   "rewrites": [
