@@ -1,5 +1,9 @@
 import {
+  createContext,
+  useCallback,
+  useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -121,6 +125,281 @@ const clerkAppearance = {
     main: "text-[#263b35]",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Currency switcher
+// ---------------------------------------------------------------------------
+const BASE_PRICE_USD = 29.99; // the "as low as" price
+const NGN_PRICE = 50000; // the flat price quoted in the "how it works" section
+
+// Rough placeholders used only until live rates load (or if that request fails).
+const FALLBACK_RATES: Record<string, number> = {
+  USD: 1,
+  NGN: 1500,
+  GBP: 0.75,
+  EUR: 0.86,
+  CAD: 1.38,
+  AUD: 1.52,
+  GHS: 11,
+  KES: 129,
+  ZAR: 18,
+  EGP: 48,
+  INR: 85,
+  AED: 3.67,
+};
+
+const POPULAR_CURRENCIES = [
+  "USD",
+  "NGN",
+  "GBP",
+  "EUR",
+  "CAD",
+  "AUD",
+  "GHS",
+  "KES",
+  "ZAR",
+];
+const RATES_URL = "https://open.er-api.com/v6/latest/USD";
+const RATES_CACHE_KEY = "smallsite.rates.v1";
+const CURRENCY_KEY = "smallsite.currency";
+const RATES_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+
+const TIMEZONE_CURRENCY: Record<string, string> = {
+  "Africa/Lagos": "NGN",
+  "Africa/Accra": "GHS",
+  "Africa/Nairobi": "KES",
+  "Africa/Johannesburg": "ZAR",
+  "Africa/Cairo": "EGP",
+};
+
+const REGION_CURRENCY: Record<string, string> = {
+  US: "USD",
+  NG: "NGN",
+  GB: "GBP",
+  CA: "CAD",
+  AU: "AUD",
+  GH: "GHS",
+  KE: "KES",
+  ZA: "ZAR",
+  EG: "EGP",
+  IN: "INR",
+  AE: "AED",
+  DE: "EUR",
+  FR: "EUR",
+  ES: "EUR",
+  IT: "EUR",
+  NL: "EUR",
+  IE: "EUR",
+  PT: "EUR",
+  BE: "EUR",
+  AT: "EUR",
+  FI: "EUR",
+};
+
+function readStorage(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // storage unavailable (private mode, etc.) — safe to ignore
+  }
+}
+
+function readCachedRates(): { at: number; rates: Record<string, number> } | null {
+  const raw = readStorage(RATES_CACHE_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed?.rates?.USD === 1 && typeof parsed.at === "number"
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function detectCurrency(): string {
+  const saved = readStorage(CURRENCY_KEY);
+  if (saved) return saved;
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (TIMEZONE_CURRENCY[tz]) return TIMEZONE_CURRENCY[tz];
+    const region = new Intl.Locale(navigator.language).maximize().region;
+    if (region && REGION_CURRENCY[region]) return REGION_CURRENCY[region];
+  } catch {
+    // fall through to USD
+  }
+  return "USD";
+}
+
+type CurrencyOption = { code: string; label: string };
+
+type CurrencyContextValue = {
+  currency: string;
+  setCurrency: (code: string) => void;
+  options: { popular: CurrencyOption[]; rest: CurrencyOption[] };
+  /** Format an amount that is expressed in USD in the selected currency. */
+  formatUsd: (usd: number) => string;
+  /** Format an amount that is expressed in NGN in the selected currency. */
+  formatNgn: (ngn: number) => string;
+  isConverted: boolean;
+};
+
+const CurrencyContext = createContext<CurrencyContextValue | null>(null);
+
+function useCurrency() {
+  const ctx = useContext(CurrencyContext);
+  if (!ctx) throw new Error("useCurrency must be used inside CurrencyProvider");
+  return ctx;
+}
+
+function CurrencyProvider({ children }: { children: ReactNode }) {
+  const [rates, setRates] = useState<Record<string, number>>(
+    () => readCachedRates()?.rates ?? FALLBACK_RATES,
+  );
+  const [selected, setSelected] = useState<string>(() => detectCurrency());
+
+  useEffect(() => {
+    const cached = readCachedRates();
+    if (cached && Date.now() - cached.at < RATES_MAX_AGE_MS) return;
+    const controller = new AbortController();
+    fetch(RATES_URL, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("rates"))))
+      .then((data) => {
+        if (data?.rates?.USD === 1) {
+          setRates(data.rates);
+          writeStorage(
+            RATES_CACHE_KEY,
+            JSON.stringify({ at: Date.now(), rates: data.rates }),
+          );
+        }
+      })
+      .catch(() => {
+        // keep cached/fallback rates
+      });
+    return () => controller.abort();
+  }, []);
+
+  // If the saved currency isn't in the rates table, fall back to USD.
+  const currency = rates[selected] ? selected : "USD";
+
+  const setCurrency = useCallback((code: string) => {
+    setSelected(code);
+    writeStorage(CURRENCY_KEY, code);
+  }, []);
+
+  const options = useMemo(() => {
+    const valid = Object.keys(rates).filter((code) => {
+      try {
+        new Intl.NumberFormat("en", { style: "currency", currency: code });
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    let names: Intl.DisplayNames | null = null;
+    try {
+      names = new Intl.DisplayNames(["en"], { type: "currency" });
+    } catch {
+      names = null;
+    }
+    const toOption = (code: string): CurrencyOption => {
+      let name: string | undefined;
+      try {
+        name = names?.of(code);
+      } catch {
+        name = undefined;
+      }
+      return { code, label: name && name !== code ? `${code} — ${name}` : code };
+    };
+    const popular = POPULAR_CURRENCIES.filter((c) => valid.includes(c));
+    const rest = valid.filter((c) => !popular.includes(c)).sort();
+    return { popular: popular.map(toOption), rest: rest.map(toOption) };
+  }, [rates]);
+
+  const formatUsd = useCallback(
+    (usd: number) => {
+      const value = usd * (rates[currency] ?? 1);
+      try {
+        return new Intl.NumberFormat(undefined, {
+          style: "currency",
+          currency,
+          currencyDisplay: "narrowSymbol",
+          ...(value >= 100
+            ? { maximumFractionDigits: 0, minimumFractionDigits: 0 }
+            : {}),
+        }).format(value);
+      } catch {
+        return `${currency} ${value.toFixed(2)}`;
+      }
+    },
+    [currency, rates],
+  );
+
+  const formatNgn = useCallback(
+    (ngn: number) => formatUsd(ngn / (rates.NGN ?? FALLBACK_RATES.NGN)),
+    [formatUsd, rates],
+  );
+
+  const value = useMemo<CurrencyContextValue>(
+    () => ({
+      currency,
+      setCurrency,
+      options,
+      formatUsd,
+      formatNgn,
+      isConverted: currency !== "USD",
+    }),
+    [currency, setCurrency, options, formatUsd, formatNgn],
+  );
+
+  return (
+    <CurrencyContext.Provider value={value}>
+      {children}
+    </CurrencyContext.Provider>
+  );
+}
+
+function CurrencySelect() {
+  const { currency, setCurrency, options } = useCurrency();
+  return (
+    <label className="relative mb-1 inline-flex items-center">
+      <span className="sr-only">Currency</span>
+      <select
+        data-testid="select-currency"
+        value={currency}
+        onChange={(e) => setCurrency(e.target.value)}
+        className="h-9 max-w-[11rem] appearance-none rounded-full border border-[#d8d3c8] bg-[#faf8f1] pl-3.5 pr-8 text-[12px] font-bold text-[#344941] outline-none transition hover:border-[#27594c] focus:border-[#528071] focus:ring-4 focus:ring-[#27594c]/10"
+      >
+        <optgroup label="Popular">
+          {options.popular.map((o) => (
+            <option key={o.code} value={o.code}>
+              {o.label}
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label="All currencies">
+          {options.rest.map((o) => (
+            <option key={o.code} value={o.code}>
+              {o.label}
+            </option>
+          ))}
+        </optgroup>
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute right-2.5 text-[#74837b]"
+        size={14}
+      />
+    </label>
+  );
+}
 
 function Brand({ dark = false }: { dark?: boolean }) {
   return (
@@ -418,6 +697,7 @@ function BookingForm() {
 }
 
 function Home() {
+  const { formatUsd, formatNgn, isConverted } = useCurrency();
   return (
     <div className="grain min-h-[100dvh] bg-[#f5f2e9]">
       <div className="mx-auto max-w-[1190px] px-5 sm:px-8">
@@ -443,10 +723,19 @@ function Home() {
                 <span className="mb-1 rounded-full bg-[#e5ede5] px-3 py-1 text-[11px] font-bold text-[#386356]">
                   as low as
                 </span>
-                <div className="font-serif text-[46px] leading-none tracking-[-.055em] text-[#243b33]">
-                  $29.99
+                <div
+                  data-testid="text-price"
+                  className="font-serif text-[46px] leading-none tracking-[-.055em] text-[#243b33]"
+                >
+                  {formatUsd(BASE_PRICE_USD)}
                 </div>
-                
+                <CurrencySelect />
+                {isConverted && (
+                  <p className="basis-full text-[11px] text-[#808a83]">
+                    Approximate conversion — we’ll confirm the final price when
+                    we get in touch.
+                  </p>
+                )}
               </div>
               <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-[12px] font-semibold text-[#60736a]">
                 <span className="inline-flex items-center gap-2">
@@ -615,7 +904,7 @@ function Home() {
                 03 / A simple next step
               </span>
               <p className="mt-3 text-[14px] leading-6 text-[#5d7066]">
-                One clear ₦50,000 price. No drawn-out pitch and no pressure to
+                One clear {formatNgn(NGN_PRICE)} price. No drawn-out pitch and no pressure to
                 decide on this page.
               </p>
             </div>
@@ -1129,9 +1418,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={basePath}>
-          <ClerkRoutes />
-        </WouterRouter>
+        <CurrencyProvider>
+          <WouterRouter base={basePath}>
+            <ClerkRoutes />
+          </WouterRouter>
+        </CurrencyProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
